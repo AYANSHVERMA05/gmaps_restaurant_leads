@@ -14,10 +14,9 @@ TARGET_LEADS_PER_CITY = 15
 RAW_JSON_FILENAME = "restaurant_leads_raw.json"
 FINAL_CSV_FILENAME = "restaurant_leads_india_top100.csv"
 
-# Target cities list
 CITIES = [
-    "Hyderabad", "Bengaluru", "Pune", "Ahmedabad", "Jaipur", 
-    "Indore", "Surat", "Lucknow", "Nagpur", "Chennai"
+    "Indore", "Nagpur", "Surat", "Lucknow", "Jaipur", 
+    "Ahmedabad", "Pune", "Chennai", "Hyderabad", "Bengaluru"
 ]
 
 # Chains to exclude
