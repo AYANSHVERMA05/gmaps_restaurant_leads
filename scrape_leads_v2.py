@@ -186,11 +186,9 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
     # - Cold Lead: 1001 - 2000 reviews (allow ONLY if website is present)
     # - Ignore: 2000+ reviews
     is_valid_lead = False
-    if reviews_count <= 500:
+    if 20 <= reviews_count <= 500:
         is_valid_lead = True
-    elif reviews_count <= 1000:
-        is_valid_lead = True if website else False
-    elif reviews_count <= 2000:
+    elif 501 <= reviews_count <= 1000:
         is_valid_lead = True if website else False
 
     if not is_valid_lead:
@@ -222,10 +220,15 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
         "Address": address
     }
     
+    # Reload from disk to prevent overwriting user edits
+    current_disk_leads = load_raw_leads()
+    if not any(x.get("Google Maps URL") == lead["Google Maps URL"] for x in current_disk_leads):
+        current_disk_leads.append(lead)
+        save_raw_leads(current_disk_leads)
+        
     raw_leads.append(lead)
     visited_urls.add(url.split("?")[0].split("/data=")[0])
     city_counts[city] += 1
-    save_raw_leads(raw_leads)
     
     print(f"--> Saved Lead #{city_counts[city]} for {city} <--")
     return True
@@ -234,10 +237,21 @@ def scrape_leads():
     raw_leads = load_raw_leads()
     visited_urls = {lead["Google Maps URL"] for lead in raw_leads}
     
-    # Calculate counts per city
+    # Calculate counts per city (only counting valid leads under the criteria)
     city_counts = {}
     for city in CITIES:
-        city_counts[city] = sum(1 for lead in raw_leads if lead.get("City") == city)
+        city_counts[city] = 0
+        for lead in raw_leads:
+            if lead.get("City") == city:
+                reviews = lead.get("Reviews", 0)
+                website = lead.get("Website", "")
+                is_valid = False
+                if 20 <= reviews <= 500:
+                    is_valid = True
+                elif 501 <= reviews <= 1000:
+                    is_valid = True if website else False
+                if is_valid:
+                    city_counts[city] += 1
     
     print("Current Scraped Lead Counts per City:")
     for city, count in city_counts.items():
@@ -327,10 +341,20 @@ def scrape_leads():
 
 def enrich_and_score_leads():
     print("\nProcessing, scoring, and enriching leads...")
-    leads = load_raw_leads()
-    if not leads:
+    raw_leads = load_raw_leads()
+    if not raw_leads:
         print("No leads found to process.")
         return
+        
+    # Deduplicate leads based on normalized Google Maps URLs
+    seen_urls = set()
+    leads = []
+    for lead in raw_leads:
+        url = lead.get("Google Maps URL", "")
+        clean_url = url.split("?")[0].split("/data=")[0] if url else ""
+        if clean_url not in seen_urls:
+            seen_urls.add(clean_url)
+            leads.append(lead)
         
     enriched_leads = []
     for lead in leads:
@@ -341,6 +365,20 @@ def enrich_and_score_leads():
         phone = lead["Phone"]
         category = lead["Category"]
         city = lead["City"]
+        
+        # Enforce user criteria:
+        # - Hot Lead: 20 - 150 reviews (allow with or without website)
+        # - Warm Lead: 151 - 500 reviews (allow with or without website)
+        # - Medium Lead: 501 - 1000 reviews (allow ONLY if website is present)
+        is_valid = False
+        if 20 <= reviews <= 500:
+            is_valid = True
+        elif 501 <= reviews <= 1000:
+            is_valid = True if website else False
+            
+        if not is_valid:
+            continue
+
         
         # 1. Website Quality Score (1-10)
         # If missing: 1. If weak/basic platform (wix, blogspot, business.site, facebook): 3. Otherwise (custom site): 6
@@ -451,7 +489,7 @@ def enrich_and_score_leads():
             lead_type = "🟡 Medium Lead"
             purchase_prob = "Medium"
         else:
-            lead_type = "❄️ Cold Lead"
+            lead_type = "Ignore"
             purchase_prob = "Low"
 
         # 9. Why they are a good prospect & Biggest problem
@@ -512,16 +550,17 @@ def enrich_and_score_leads():
         print(f"Warning: Only have {len(top_100)} leads. Will output what we have.")
         
     try:
-        with open(FINAL_CSV_FILENAME, mode='w', newline='', encoding='utf-8') as f:
-            fieldnames = [
-                "Business Name", "Category", "City", "Phone", "Website", 
-                "Google Reviews", "Rating", "Website Score", "Review Gap", 
-                "Priority Score", "Lead Type", "Purchase Probability", "Personalized Pitch Angle"
-            ]
-            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
-            writer.writeheader()
-            writer.writerows(top_100)
-        print(f"Successfully wrote top {len(top_100)} leads to {FINAL_CSV_FILENAME}")
+        for filename in [FINAL_CSV_FILENAME, "restaurant_leads_india.csv"]:
+            with open(filename, mode='w', newline='', encoding='utf-8') as f:
+                fieldnames = [
+                    "Business Name", "Category", "City", "Phone", "Website", 
+                    "Google Reviews", "Rating", "Website Score", "Review Gap", 
+                    "Priority Score", "Lead Type", "Purchase Probability", "Personalized Pitch Angle"
+                ]
+                writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+                writer.writeheader()
+                writer.writerows(top_100)
+            print(f"Successfully wrote top {len(top_100)} leads to {filename}")
         
         # Also write details of all leads (including scores, etc) to a rich JSON file
         with open("restaurant_leads_india_top100.json", 'w', encoding='utf-8') as f:
