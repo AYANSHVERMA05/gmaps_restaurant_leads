@@ -132,11 +132,7 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
     except:
         pass
 
-    # Filter reviews < 100
-    if reviews_count >= 100:
-        print(f"Skipping '{name}': Too many reviews ({reviews_count}).")
-        visited_urls.add(url.split("?")[0].split("/data=")[0])
-        return False
+    # (Review and website validation will be done after parsing the website)
 
     # 3. Parse Phone Number (Mandatory)
     phone = ""
@@ -182,6 +178,25 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
             website = clean_website_url(raw_website)
     except:
         pass
+
+    # Review & Website qualification criteria matching user lead types:
+    # - Hot Lead: 0 - 150 reviews (allow with or without website)
+    # - Warm Lead: 151 - 500 reviews (allow with or without website)
+    # - Medium Lead: 501 - 1000 reviews (allow ONLY if website is present)
+    # - Cold Lead: 1001 - 2000 reviews (allow ONLY if website is present)
+    # - Ignore: 2000+ reviews
+    is_valid_lead = False
+    if reviews_count <= 500:
+        is_valid_lead = True
+    elif reviews_count <= 1000:
+        is_valid_lead = True if website else False
+    elif reviews_count <= 2000:
+        is_valid_lead = True if website else False
+
+    if not is_valid_lead:
+        print(f"Skipping '{name}': Does not meet review & website criteria (Reviews: {reviews_count}, Has Website: {bool(website)}).")
+        visited_urls.add(url.split("?")[0].split("/data=")[0])
+        return False
 
     # 6. Parse Address
     address = ""
@@ -425,12 +440,18 @@ def enrich_and_score_leads():
         # Guarantee range and format
         priority_score = min(100, max(0, priority_score))
 
-        # 8. Purchase Probability
-        if priority_score >= 85:
+        # 8. Classify Lead Type & Purchase Probability
+        if reviews <= 150:
+            lead_type = "🔥 Hot Lead"
             purchase_prob = "High"
-        elif priority_score >= 65:
+        elif reviews <= 500:
+            lead_type = "🟠 Warm Lead"
+            purchase_prob = "Medium"
+        elif reviews <= 1000:
+            lead_type = "🟡 Medium Lead"
             purchase_prob = "Medium"
         else:
+            lead_type = "❄️ Cold Lead"
             purchase_prob = "Low"
 
         # 9. Why they are a good prospect & Biggest problem
@@ -470,6 +491,7 @@ def enrich_and_score_leads():
             "Review Gap": review_gap,
             "Decision Maker Accessibility Score": accessibility_score,
             "Priority Score": priority_score,
+            "Lead Type": lead_type,
             "Purchase Probability": purchase_prob,
             "Biggest Problem": biggest_problem,
             "Why Good Prospect": why_good,
@@ -494,7 +516,7 @@ def enrich_and_score_leads():
             fieldnames = [
                 "Business Name", "Category", "City", "Phone", "Website", 
                 "Google Reviews", "Rating", "Website Score", "Review Gap", 
-                "Priority Score", "Purchase Probability", "Personalized Pitch Angle"
+                "Priority Score", "Lead Type", "Purchase Probability", "Personalized Pitch Angle"
             ]
             writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
