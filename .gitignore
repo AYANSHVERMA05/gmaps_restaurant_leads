@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+restaurant_leads_raw.json
+.system_generated/
+*.log
