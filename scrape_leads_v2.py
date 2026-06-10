@@ -167,6 +167,13 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
     except:
         pass
 
+    # Exclude cloud kitchens
+    category_lower = category.lower()
+    if "cloud kitchen" in name_lower or "cloud kitchen" in category_lower:
+        print(f"Skipping '{name}': Excluded cloud kitchen.")
+        visited_urls.add(url.split("?")[0].split("/data=")[0])
+        return False
+
     # 5. Parse Website
     website = ""
     try:
@@ -250,7 +257,6 @@ def scrape_leads():
             queries_to_try = [
                 f"cafes in {city}",
                 f"bakeries in {city}",
-                f"cloud kitchens in {city}",
                 f"new restaurants in {city}",
                 f"restaurants in {city}"
             ]
