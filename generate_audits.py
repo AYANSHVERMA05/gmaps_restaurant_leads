@@ -445,7 +445,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 """
 
 def clean_phone_number(phone):
-    return re.sub(r'\D', '', phone)
+    if not phone:
+        return ""
+    # Remove all non-digit characters
+    digits = re.sub(r'\D', '', phone)
+    # Strip leading zero if 11 digits (e.g. 09876543210 -> 9876543210)
+    if len(digits) == 11 and digits.startswith('0'):
+        digits = digits[1:]
+    # Prepend Indian country code if 10 digits
+    if len(digits) == 10:
+        digits = "91" + digits
+    return digits
 
 def generate_report(lead):
     # Calculate gauge percentages (dasharrays based on 283 full circle stroke)
@@ -491,9 +501,6 @@ def generate_report(lead):
     # Clean phone for CTA links
     phone = lead.get("Phone", "")
     clean_phone = clean_phone_number(phone)
-    # Add country code for WhatsApp if needed (Indian mobile numbers)
-    if len(clean_phone) == 10:
-        clean_phone = "91" + clean_phone
 
     # WhatsApp Pitch Encoding
     pitch_text = f"Hi! I just did a local visibility and Google Maps review audit for {lead['Business Name']}. You have an amazing {lead['Rating']} rating but are currently behind your local competitors by over {lead['Review Gap']} reviews. We have built a free action plan for you to rank top-3 on Maps and get more dine-in bookings. Let me know if you would like me to share it!"
@@ -1016,8 +1023,6 @@ def generate_index_dashboard(leads):
             
         phone = lead.get("Phone", "")
         clean_phone = clean_phone_number(phone)
-        if len(clean_phone) == 10:
-            clean_phone = "91" + clean_phone
             
         pitch_text = f"Hi! I just did a local visibility and Google Maps review audit for {lead['Business Name']}. You have an amazing {lead['Rating']} rating but are currently behind your local competitors by over {lead['Review Gap']} reviews. We have built a free action plan for you to rank top-3 on Maps and get more dine-in bookings. Let me know if you would like me to share it!"
         from urllib.parse import quote
