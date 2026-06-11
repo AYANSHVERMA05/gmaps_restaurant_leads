@@ -3,3 +3,6 @@ __pycache__/
 restaurant_leads_raw.json
 .system_generated/
 *.log
+*_other_cities.json
+*_other_cities.csv
+audits_other_cities/

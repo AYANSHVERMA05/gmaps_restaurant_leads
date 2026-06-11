@@ -15,8 +15,7 @@ RAW_JSON_FILENAME = "restaurant_leads_raw.json"
 FINAL_CSV_FILENAME = "restaurant_leads_india_top100.csv"
 
 CITIES = [
-    "Indore", "Nagpur", "Surat", "Lucknow", "Jaipur", 
-    "Ahmedabad", "Pune", "Chennai", "Hyderabad", "Bengaluru"
+    "Delhi"
 ]
 
 # Chains to exclude
@@ -186,13 +185,11 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
     # - Cold Lead: 1001 - 2000 reviews (allow ONLY if website is present)
     # - Ignore: 2000+ reviews
     is_valid_lead = False
-    if 20 <= reviews_count <= 500:
+    if 20 <= reviews_count <= 150:
         is_valid_lead = True
-    elif 501 <= reviews_count <= 1000:
-        is_valid_lead = True if website else False
 
     if not is_valid_lead:
-        print(f"Skipping '{name}': Does not meet review & website criteria (Reviews: {reviews_count}, Has Website: {bool(website)}).")
+        print(f"Skipping '{name}': Does not meet review criteria for Hot Leads (Reviews: {reviews_count}).")
         visited_urls.add(url.split("?")[0].split("/data=")[0])
         return False
 
@@ -244,12 +241,9 @@ def scrape_leads():
         for lead in raw_leads:
             if lead.get("City") == city:
                 reviews = lead.get("Reviews", 0)
-                website = lead.get("Website", "")
                 is_valid = False
-                if 20 <= reviews <= 500:
+                if 20 <= reviews <= 150:
                     is_valid = True
-                elif 501 <= reviews <= 1000:
-                    is_valid = True if website else False
                 if is_valid:
                     city_counts[city] += 1
     
@@ -368,13 +362,9 @@ def enrich_and_score_leads():
         
         # Enforce user criteria:
         # - Hot Lead: 20 - 150 reviews (allow with or without website)
-        # - Warm Lead: 151 - 500 reviews (allow with or without website)
-        # - Medium Lead: 501 - 1000 reviews (allow ONLY if website is present)
         is_valid = False
-        if 20 <= reviews <= 500:
+        if 20 <= reviews <= 150:
             is_valid = True
-        elif 501 <= reviews <= 1000:
-            is_valid = True if website else False
             
         if not is_valid:
             continue
