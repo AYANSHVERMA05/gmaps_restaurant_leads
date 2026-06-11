@@ -367,6 +367,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <span>{website_link}</span>
             </div>
             <div class="info-row">
+                <span>Instagram Profile</span>
+                <span>{instagram_link}</span>
+            </div>
+            <div class="info-row">
                 <span>Address</span>
                 <span>{address}</span>
             </div>
@@ -379,7 +383,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <section class="card graph-card">
             <h2>Competitor Analysis</h2>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
-                Comparison of review volume against the local average competitor baseline (500 reviews) in {city}.
+                Comparison of review volume against the local average competitor baseline (1000 reviews) in {city}.
             </p>
             <div class="bar-container">
                 <div class="bar-row">
@@ -394,7 +398,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <div class="bar-row">
                     <div class="bar-labels">
                         <span>Average Competitor Average</span>
-                        <span>500 Reviews</span>
+                        <span>1000 Reviews</span>
                     </div>
                     <div class="bar-outer">
                         <div class="bar-inner bar-comp" style="width: 100%;"></div>
@@ -472,16 +476,14 @@ def generate_report(lead):
 
     # Competitor gap progress bar styling
     reviews = lead.get("Google Reviews", 0)
-    reviews_bar_pct = min(100, int((reviews / 500) * 100))
+    reviews_bar_pct = min(100, int((reviews / 1000) * 100))
 
     # Badge styling
-    lead_type = lead.get("Lead Type", "🔥 Hot Lead")
-    if "Hot" in lead_type:
+    lead_type = lead.get("Lead Type", "Type A (Web + Insta)")
+    if "Type A" in lead_type:
         badge_class = "badge-hot"
-    elif "Warm" in lead_type:
-        badge_class = "badge-warm"
     else:
-        badge_class = "badge-medium"
+        badge_class = "badge-warm"
 
     # Website specific recommendation
     website = lead.get("Website", "None")
@@ -498,6 +500,13 @@ def generate_report(lead):
                     <div class="recommendation-desc">Improve SEO meta-tags, structural loading speeds, and install clear Call-To-Action conversion anchors.</div>
                 </li>"""
 
+    # Format Instagram link
+    instagram_url = lead.get("Instagram URL", "")
+    if instagram_url:
+        instagram_link = f'<a href="{instagram_url}" target="_blank" style="color: var(--accent-purple); text-decoration: none;">{instagram_url}</a>'
+    else:
+        instagram_link = '<span style="color: var(--score-low);">Not Verified</span>'
+
     # Clean phone for CTA links
     phone = lead.get("Phone", "")
     clean_phone = clean_phone_number(phone)
@@ -505,8 +514,8 @@ def generate_report(lead):
     # Sanitize name for filename and URL
     safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', lead.get("Business Name", "business"))
 
-    # WhatsApp Pitch Encoding
-    pitch_text = f"Hey! Love the reviews at {lead['Business Name']}—a {lead['Rating']} rating is awesome! I was looking over Google Maps listings in {lead['City']} and noticed one small adjustment that could bring you a lot more dine-in customers. I put together a quick, free visibility checklist for you here: https://ayanshverma05.github.io/gmaps_restaurant_leads/audits/audit_{safe_name}.html. Hope it helps!"
+    # WhatsApp Pitch Encoding - permission first, no URLs!
+    pitch_text = f"Hey! Love the reviews at {lead['Business Name']}—a {lead['Rating']} rating is awesome! I was looking over Google Maps listings in {lead['City']} and noticed one small adjustment that could bring you a lot more dine-in customers. I put together a quick, free visibility checklist for your profile. Let me know if I can send the report over!"
     from urllib.parse import quote
     pitch_url_encoded = quote(pitch_text)
 
@@ -525,6 +534,7 @@ def generate_report(lead):
         category=lead.get("Category", ""),
         phone=phone,
         website_link=website_link,
+        instagram_link=instagram_link,
         address=lead.get("Address", "No physical address listed"),
         est_revenue=lead.get("Estimated Monthly Revenue Potential", "₹0"),
         reviews=reviews,
@@ -873,16 +883,12 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
                 <div class="stat-label">Total Leads</div>
             </div>
             <div class="stat-card hot">
-                <div class="stat-val">{hot_leads}</div>
-                <div class="stat-label">🔥 Hot Leads</div>
+                <div class="stat-val">{type_a_leads}</div>
+                <div class="stat-label">Type A (Web + Insta)</div>
             </div>
             <div class="stat-card warm">
-                <div class="stat-val">{warm_leads}</div>
-                <div class="stat-label">🟠 Warm Leads</div>
-            </div>
-            <div class="stat-card medium">
-                <div class="stat-val">{medium_leads}</div>
-                <div class="stat-label">🟡 Medium Leads</div>
+                <div class="stat-val">{type_b_leads}</div>
+                <div class="stat-label">Type B (No Web + Insta)</div>
             </div>
         </section>
 
@@ -893,9 +899,8 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div class="filter-buttons">
                 <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="🔥 Hot Lead">🔥 Hot</button>
-                <button class="filter-btn" data-filter="🟠 Warm Lead">🟠 Warm</button>
-                <button class="filter-btn" data-filter="🟡 Medium Lead">🟡 Medium</button>
+                <button class="filter-btn" data-filter="Type A (Web + Insta)">Type A (Web + Insta)</button>
+                <button class="filter-btn" data-filter="Type B (No Web + Insta)">Type B (No Web + Insta)</button>
             </div>
             <div class="sort-box">
                 <select id="sortSelect">
@@ -1015,18 +1020,17 @@ def generate_index_dashboard(leads):
         audit_url = f"audits/audit_{safe_name}.html"
         
         # Calculate badge class
-        lead_type = lead.get("Lead Type", "🔥 Hot Lead")
-        if "Hot" in lead_type:
+        lead_type = lead.get("Lead Type", "Type A (Web + Insta)")
+        if "Type A" in lead_type:
             badge_class = "badge-hot"
-        elif "Warm" in lead_type:
-            badge_class = "badge-warm"
         else:
-            badge_class = "badge-medium"
+            badge_class = "badge-warm"
             
         phone = lead.get("Phone", "")
         clean_phone = clean_phone_number(phone)
             
-        pitch_text = f"Hey! Love the reviews at {lead['Business Name']}—a {lead['Rating']} rating is awesome! I was looking over Google Maps listings in {lead['City']} and noticed one small adjustment that could bring you a lot more dine-in customers. I put together a quick, free visibility checklist for you here: https://ayanshverma05.github.io/gmaps_restaurant_leads/audits/audit_{safe_name}.html. Hope it helps!"
+        # WhatsApp Pitch Encoding - permission first, no URLs!
+        pitch_text = f"Hey! Love the reviews at {lead['Business Name']}—a {lead['Rating']} rating is awesome! I was looking over Google Maps listings in {lead['City']} and noticed one small adjustment that could bring you a lot more dine-in customers. I put together a quick, free visibility checklist for your profile. Let me know if I can send the report over!"
         from urllib.parse import quote
         pitch_url_encoded = quote(pitch_text)
         wa_link = f"https://wa.me/{clean_phone}?text={pitch_url_encoded}"
@@ -1046,15 +1050,13 @@ def generate_index_dashboard(leads):
         
     # Stats counts
     total_leads = len(records)
-    hot_leads = sum(1 for r in records if "Hot" in r["type"])
-    warm_leads = sum(1 for r in records if "Warm" in r["type"])
-    medium_leads = sum(1 for r in records if "Medium" in r["type"])
+    type_a_leads = sum(1 for r in records if "Type A" in r["type"])
+    type_b_leads = sum(1 for r in records if "Type B" in r["type"])
 
     html = INDEX_TEMPLATE
     html = html.replace("{total_leads}", str(total_leads))
-    html = html.replace("{hot_leads}", str(hot_leads))
-    html = html.replace("{warm_leads}", str(warm_leads))
-    html = html.replace("{medium_leads}", str(medium_leads))
+    html = html.replace("{type_a_leads}", str(type_a_leads))
+    html = html.replace("{type_b_leads}", str(type_b_leads))
     html = html.replace("{leads_json_str}", json.dumps(records, indent=2))
 
     filename = "index.html"

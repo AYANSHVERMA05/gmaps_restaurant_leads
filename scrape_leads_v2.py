@@ -3,8 +3,61 @@ import re
 import csv
 import json
 import sys
-from urllib.parse import urlparse, parse_qs
+import requests
+from urllib.parse import urlparse, parse_qs, quote
+from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
+
+def check_instagram_on_website(url):
+    if not url:
+        return None
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            for a in soup.find_all("a", href=True):
+                href = a["href"].strip()
+                if "instagram.com" in href.lower():
+                    clean_href = href.split('?')[0].rstrip('/')
+                    path = urlparse(clean_href).path.strip('/')
+                    if path and path not in ['developer', 'about', 'legal', 'directory', 'explore', 'p', 'tv', 'reel', 'stories', 'accounts', 'reels']:
+                        return clean_href
+    except Exception as e:
+        print(f"Error checking website {url} for Instagram: {e}")
+    return None
+
+def search_instagram_for_business(business_name, city):
+    query = f"{business_name} {city} instagram"
+    url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            valid_links = []
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                if "uddg=" in href:
+                    parsed = urlparse(href)
+                    qs = parse_qs(parsed.query)
+                    if "uddg" in qs:
+                        href = qs["uddg"][0]
+                
+                if "instagram.com" in href:
+                    clean_href = href.split('?')[0].rstrip('/')
+                    path = urlparse(clean_href).path.strip('/')
+                    if path and path not in ['developer', 'about', 'legal', 'directory', 'explore', 'p', 'tv', 'reel', 'stories', 'accounts', 'reels']:
+                        valid_links.append(clean_href)
+            if valid_links:
+                return valid_links[0]
+    except Exception as e:
+        print(f"Error searching DuckDuckGo for {business_name}: {e}")
+    return None
 
 # Reconfigure stdout for UTF-8 to handle Indian names/emojis in Windows console
 sys.stdout.reconfigure(encoding='utf-8')
@@ -179,17 +232,34 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
         pass
 
     # Review & Website qualification criteria matching user lead types:
-    # - Hot Lead: 0 - 150 reviews (allow with or without website)
-    # - Warm Lead: 151 - 500 reviews (allow with or without website)
-    # - Medium Lead: 501 - 1000 reviews (allow ONLY if website is present)
-    # - Cold Lead: 1001 - 2000 reviews (allow ONLY if website is present)
-    # - Ignore: 2000+ reviews
-    is_valid_lead = False
-    if 20 <= reviews_count <= 150:
-        is_valid_lead = True
+    # 1. Check review count FIRST to avoid unnecessary calls and rate-limiting
+    if reviews_count > 700:
+        print(f"Skipping '{name}': Too many reviews ({reviews_count} reviews, max 700).")
+        visited_urls.add(url.split("?")[0].split("/data=")[0])
+        return False
 
-    if not is_valid_lead:
-        print(f"Skipping '{name}': Does not meet review criteria for Hot Leads (Reviews: {reviews_count}).")
+    # Warm Lead Type A: Has custom website, has Instagram, <= 700 reviews
+    # Warm Lead Type B: No custom website, has Instagram, <= 700 reviews
+    instagram_url = ""
+    
+    # 1. Check if the Maps website is directly an Instagram link
+    if website and "instagram.com" in website.lower():
+        instagram_url = website
+        website = ""
+        
+    # 2. Check custom website if available
+    if website and not instagram_url:
+        domain = urlparse(website).netloc.lower()
+        weak_platforms = ["wixsite.com", "blogspot.com", "business.site", "facebook.com", "tumblr.com"]
+        if not any(platform in domain for platform in weak_platforms):
+            instagram_url = check_instagram_on_website(website)
+            
+    # 3. Fallback to DuckDuckGo search
+    if not instagram_url:
+        instagram_url = search_instagram_for_business(name, city)
+
+    if not instagram_url:
+        print(f"Skipping '{name}': No Instagram presence found (Reviews: {reviews_count}).")
         visited_urls.add(url.split("?")[0].split("/data=")[0])
         return False
 
@@ -202,7 +272,7 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
     except:
         pass
 
-    print(f"SUCCESS: Name: '{name}' | Reviews: {reviews_count} | Rating: {rating_val} | Phone: {phone} | Web: {website if website else 'None'}")
+    print(f"SUCCESS: Name: '{name}' | Reviews: {reviews_count} | Rating: {rating_val} | Phone: {phone} | Web: {website if website else 'None'} | Insta: {instagram_url}")
     
     # Save Raw Lead
     lead = {
@@ -212,6 +282,7 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
         "Google Maps URL": url,
         "Phone": phone,
         "Website": website,
+        "Instagram URL": instagram_url,
         "Reviews": reviews_count,
         "Rating": rating_val,
         "Address": address
@@ -241,10 +312,8 @@ def scrape_leads():
         for lead in raw_leads:
             if lead.get("City") == city:
                 reviews = lead.get("Reviews", 0)
-                is_valid = False
-                if 20 <= reviews <= 150:
-                    is_valid = True
-                if is_valid:
+                insta = lead.get("Instagram URL", "")
+                if reviews <= 700 and insta:
                     city_counts[city] += 1
     
     print("Current Scraped Lead Counts per City:")
@@ -277,10 +346,13 @@ def scrape_leads():
 
             # Sub-queries targeting low-review small businesses
             queries_to_try = [
-                f"cafes in {city}",
-                f"bakeries in {city}",
+                f"new cafes in {city}",
                 f"new restaurants in {city}",
-                f"restaurants in {city}"
+                f"home bakers in {city}",
+                f"waffle shops in {city}",
+                f"boutique cafes in {city}",
+                f"bakeries in {city}",
+                f"cafes in {city}"
             ]
 
             for query_term in queries_to_try:
@@ -359,17 +431,12 @@ def enrich_and_score_leads():
         phone = lead["Phone"]
         category = lead["Category"]
         city = lead["City"]
+        instagram_url = lead.get("Instagram URL", "")
         
-        # Enforce user criteria:
-        # - Hot Lead: 20 - 150 reviews (allow with or without website)
-        is_valid = False
-        if 20 <= reviews <= 150:
-            is_valid = True
-            
-        if not is_valid:
+        # Enforce user criteria: Reviews <= 700 and has Instagram verified
+        if reviews > 700 or not instagram_url:
             continue
 
-        
         # 1. Website Quality Score (1-10)
         # If missing: 1. If weak/basic platform (wix, blogspot, business.site, facebook): 3. Otherwise (custom site): 6
         web_score = 1
@@ -385,8 +452,15 @@ def enrich_and_score_leads():
         else:
             is_weak_website = True
 
+        # Check if it has a custom website (not Wix/Blogspot/etc. and not empty)
+        is_custom_web = False
+        if website:
+            domain = urlparse(website).netloc.lower()
+            weak_platforms = ["wixsite.com", "blogspot.com", "business.site", "facebook.com", "instagram.com", "tumblr.com"]
+            if not any(platform in domain for platform in weak_platforms):
+                is_custom_web = True
+
         # 2. Google Profile Optimization Score (1-10)
-        # Start at 8. Subtract for flaws.
         g_opt_score = 8
         if reviews < 30:
             g_opt_score -= 3
@@ -404,14 +478,11 @@ def enrich_and_score_leads():
         g_opt_score = max(1, min(10, g_opt_score))
 
         # 3. Competitor Review Gap
-        # Top local average is assumed to be 500 reviews
-        comp_reviews_avg = 500
+        comp_reviews_avg = 1000
         review_gap = max(10, comp_reviews_avg - reviews)
 
         # 4. Decision Maker Accessibility Score (1-10)
-        # Mobile number = 9 (starts with 6,7,8,9 or matches 10 digits). Landline = 4
         clean_phone = re.sub(r'\D', '', phone)
-        # Indian mobile numbers start with 6, 7, 8, or 9 and have 10 digits (excluding leading 0 or 91)
         is_mobile = False
         if len(clean_phone) >= 10:
             last_10 = clean_phone[-10:]
@@ -420,19 +491,10 @@ def enrich_and_score_leads():
         
         accessibility_score = 9 if is_mobile else 4
 
-        # 5. Social Media Activity Heuristics
-        # Check if website is a facebook or instagram page, or default to True if they are cafes/bakeries/restaurants (active)
-        is_active_social = False
-        if website and ("facebook.com" in website.lower() or "instagram.com" in website.lower()):
-            is_active_social = True
-        elif not website and (category.lower() in ["cafe", "bakery", "café", "cloud kitchen"]):
-            is_active_social = True # High likelihood they use Instagram
-        else:
-            # Let's say a general restaurant has a 50% chance if they have a mobile number
-            is_active_social = is_mobile
+        # 5. Social Media Activity Heuristics (Always True as they have Instagram)
+        is_active_social = True
 
         # 6. Estimated Monthly Revenue Potential
-        # Base on category: Cafe/Bakery: ₹200k, Cloud Kitchen: ₹250k, Restaurant: ₹400k
         base_revenue = 400000
         cat_lower = category.lower()
         if "cafe" in cat_lower or "bakery" in cat_lower or "café" in cat_lower:
@@ -442,66 +504,53 @@ def enrich_and_score_leads():
         elif "fast food" in cat_lower or "sweet" in cat_lower or "snack" in cat_lower:
             base_revenue = 300000
             
-        # Add proxy transaction volume
         volume_revenue = reviews * rating * 250
         est_revenue = base_revenue + volume_revenue
-        # Round to nearest thousand
         est_revenue = int(round(est_revenue / 1000) * 1000)
 
         # 7. Priority Score (1-100)
         priority_score = 0
-        if reviews < 50:
+        if reviews < 100:
             priority_score += 30
-        if not website:
+        elif reviews < 300:
             priority_score += 20
-        if is_weak_website and website:
-            priority_score += 15
-        # Since reviews are < 100 and top competitor is 500 reviews, competitor reviews (500) is always >= 2x reviews (max 99 * 2 = 198)
-        # So this is always True
+        else:
+            priority_score += 10
+            
+        if not is_custom_web:
+            priority_score += 30 # Type B has no website, great for pitching landing page
+        else:
+            priority_score += 20 # Type A has website, great for pitching SEO/reviews
+            
         if review_gap >= 2 * reviews:
             priority_score += 15
         if is_mobile:
-            priority_score += 10
-        if is_active_social:
+            priority_score += 15
+        if instagram_url:
             priority_score += 10
             
-        # Guarantee range and format
         priority_score = min(100, max(0, priority_score))
 
         # 8. Classify Lead Type & Purchase Probability
-        if reviews <= 150:
-            lead_type = "🔥 Hot Lead"
-            purchase_prob = "High"
-        elif reviews <= 500:
-            lead_type = "🟠 Warm Lead"
-            purchase_prob = "Medium"
-        elif reviews <= 1000:
-            lead_type = "🟡 Medium Lead"
-            purchase_prob = "Medium"
+        if is_custom_web:
+            lead_type = "Type A (Web + Insta)"
         else:
-            lead_type = "Ignore"
-            purchase_prob = "Low"
+            lead_type = "Type B (No Web + Insta)"
+        purchase_prob = "High"
 
         # 9. Why they are a good prospect & Biggest problem
-        if not website:
-            biggest_problem = "No website / losing all local search and delivery referral traffic"
-            why_good = f"Zero web presence. Standard competitor in {city} has over 500 reviews and a website. Easy visual upgrade pitch."
-        elif is_weak_website:
-            biggest_problem = f"Weak web footprint ({urlparse(website).netloc})"
-            why_good = "Has website but on a weak/outdated landing page with negligible SEO signals."
+        if not is_custom_web:
+            biggest_problem = "Has active Instagram presence but lacks a custom website for Google Search and Maps conversion"
+            why_good = f"Strong visual presence on Instagram, but completely missing out on high-intent search traffic in {city} due to lack of a custom landing page. Standard competitors have 500+ reviews and websites."
         else:
-            biggest_problem = f"Stuck at only {reviews} reviews while competitor average is 500+"
-            why_good = "Active business with custom website but lacks reviews volume to rank high in Maps packs."
+            biggest_problem = f"Stuck at only {reviews} reviews despite having a custom website and active Instagram"
+            why_good = f"Active local business in {city} with a custom website and Instagram presence, but currently lags behind competitor review volume (average 500+ reviews), keeping them lower on Google Maps packs."
 
         # 10. Personalized Pitch Angle
-        if reviews == 0:
-            pitch_angle = f"Competitors in {city} have 500+ reviews. We'll set up your Review System and automate getting reviews from every table dine-in to rank in top 3 maps."
-        elif not website:
-            pitch_angle = f"Missing website and losing local {city} traffic. We will build an SEO-optimized landing page and double your Google reviews."
-        elif is_weak_website:
-            pitch_angle = f"Upgrade your weak link ({urlparse(website).netloc}) to an online-ordering ready SEO site and launch our automatic review growth tool."
+        if not is_custom_web:
+            pitch_angle = f"Turn your {city} local searches and Google Maps presence into direct dine-in customers. We will build a custom mobile-friendly website and help automate review generation."
         else:
-            pitch_angle = f"Excellent {rating} rating, but you only have {reviews} reviews. Competitors in {city} have 5x reviews. We'll close that gap in 60 days."
+            pitch_angle = f"You have a great website and Instagram, but only {reviews} reviews. Let's double your Google Business Profile reviews to match {city}'s top competitors."
 
         enriched_leads.append({
             "Business Name": name,
@@ -510,6 +559,7 @@ def enrich_and_score_leads():
             "Google Maps URL": lead["Google Maps URL"],
             "Phone": phone,
             "Website": website if website else "None",
+            "Instagram URL": instagram_url,
             "Google Reviews": reviews,
             "Rating": rating,
             "Address": lead["Address"],
@@ -543,7 +593,7 @@ def enrich_and_score_leads():
         for filename in [FINAL_CSV_FILENAME, "restaurant_leads_india.csv"]:
             with open(filename, mode='w', newline='', encoding='utf-8') as f:
                 fieldnames = [
-                    "Business Name", "Category", "City", "Phone", "Website", 
+                    "Business Name", "Category", "City", "Phone", "Website", "Instagram URL",
                     "Google Reviews", "Rating", "Website Score", "Review Gap", 
                     "Priority Score", "Lead Type", "Purchase Probability", "Personalized Pitch Angle"
                 ]

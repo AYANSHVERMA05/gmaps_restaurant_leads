@@ -319,20 +319,16 @@
         <!-- Stats -->
         <section class="stats-grid">
             <div class="stat-card total">
-                <div class="stat-val">2</div>
+                <div class="stat-val">9</div>
                 <div class="stat-label">Total Leads</div>
             </div>
             <div class="stat-card hot">
-                <div class="stat-val">2</div>
-                <div class="stat-label">🔥 Hot Leads</div>
+                <div class="stat-val">7</div>
+                <div class="stat-label">Type A (Web + Insta)</div>
             </div>
             <div class="stat-card warm">
-                <div class="stat-val">0</div>
-                <div class="stat-label">🟠 Warm Leads</div>
-            </div>
-            <div class="stat-card medium">
-                <div class="stat-val">0</div>
-                <div class="stat-label">🟡 Medium Leads</div>
+                <div class="stat-val">2</div>
+                <div class="stat-label">Type B (No Web + Insta)</div>
             </div>
         </section>
 
@@ -343,9 +339,8 @@
             </div>
             <div class="filter-buttons">
                 <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="🔥 Hot Lead">🔥 Hot</button>
-                <button class="filter-btn" data-filter="🟠 Warm Lead">🟠 Warm</button>
-                <button class="filter-btn" data-filter="🟡 Medium Lead">🟡 Medium</button>
+                <button class="filter-btn" data-filter="Type A (Web + Insta)">Type A (Web + Insta)</button>
+                <button class="filter-btn" data-filter="Type B (No Web + Insta)">Type B (No Web + Insta)</button>
             </div>
             <div class="sort-box">
                 <select id="sortSelect">
@@ -366,28 +361,112 @@
     <script>
         const leadsData = [
   {
-    "name": "24/7 Restaurant - New Delhi",
-    "city": "Delhi",
-    "category": "Restaurant",
-    "reviews": 82,
-    "priority": 35,
-    "type": "\ud83d\udd25 Hot Lead",
-    "badge_class": "badge-hot",
-    "url": "audits/audit_24_7_Restaurant_-_New_Delhi.html",
-    "wa_link": "https://wa.me/918826892902?text=Hey%21%20Love%20the%20reviews%20at%2024/7%20Restaurant%20-%20New%20Delhi%E2%80%94a%204.6%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20you%20here%3A%20https%3A//ayanshverma05.github.io/gmaps_restaurant_leads/audits/audit_24_7_Restaurant_-_New_Delhi.html.%20Hope%20it%20helps%21",
-    "phone": "08826892902"
-  },
-  {
-    "name": "Ye Old Bakery",
+    "name": "The Home Bakers Delhi",
     "city": "Delhi",
     "category": "Bakery and Cake Shop",
-    "reviews": 58,
-    "priority": 15,
-    "type": "\ud83d\udd25 Hot Lead",
+    "reviews": 24,
+    "priority": 100,
+    "type": "Type B (No Web + Insta)",
+    "badge_class": "badge-warm",
+    "url": "audits/audit_The_Home_Bakers_Delhi.html",
+    "wa_link": "https://wa.me/918076473789?text=Hey%21%20Love%20the%20reviews%20at%20The%20Home%20Bakers%20Delhi%E2%80%94a%204.3%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "08076473789"
+  },
+  {
+    "name": "Waffle Castle Delhi (Vijay Nagar)",
+    "city": "Delhi",
+    "category": "Dessert shop",
+    "reviews": 197,
+    "priority": 80,
+    "type": "Type A (Web + Insta)",
     "badge_class": "badge-hot",
-    "url": "audits/audit_Ye_Old_Bakery.html",
-    "wa_link": "https://wa.me/911139555078?text=Hey%21%20Love%20the%20reviews%20at%20Ye%20Old%20Bakery%E2%80%94a%204.6%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20you%20here%3A%20https%3A//ayanshverma05.github.io/gmaps_restaurant_leads/audits/audit_Ye_Old_Bakery.html.%20Hope%20it%20helps%21",
-    "phone": "01139555078"
+    "url": "audits/audit_Waffle_Castle_Delhi__Vijay_Nagar_.html",
+    "wa_link": "https://wa.me/919971211830?text=Hey%21%20Love%20the%20reviews%20at%20Waffle%20Castle%20Delhi%20%28Vijay%20Nagar%29%E2%80%94a%204.9%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "09971211830"
+  },
+  {
+    "name": "Waffle Castle Delhi (NSP Pitampura)",
+    "city": "Delhi",
+    "category": "Dessert shop",
+    "reviews": 120,
+    "priority": 80,
+    "type": "Type A (Web + Insta)",
+    "badge_class": "badge-hot",
+    "url": "audits/audit_Waffle_Castle_Delhi__NSP_Pitampura_.html",
+    "wa_link": "https://wa.me/917011073940?text=Hey%21%20Love%20the%20reviews%20at%20Waffle%20Castle%20Delhi%20%28NSP%20Pitampura%29%E2%80%94a%204.9%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "07011073940"
+  },
+  {
+    "name": "Waffle Castle Delhi (Shalimar Bagh)",
+    "city": "Delhi",
+    "category": "Dessert shop",
+    "reviews": 160,
+    "priority": 80,
+    "type": "Type A (Web + Insta)",
+    "badge_class": "badge-hot",
+    "url": "audits/audit_Waffle_Castle_Delhi__Shalimar_Bagh_.html",
+    "wa_link": "https://wa.me/917678270258?text=Hey%21%20Love%20the%20reviews%20at%20Waffle%20Castle%20Delhi%20%28Shalimar%20Bagh%29%E2%80%94a%204.9%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "07678270258"
+  },
+  {
+    "name": "Raajsik - Indian Cuisine Restaurant",
+    "city": "Delhi",
+    "category": "North Indian restaurant",
+    "reviews": 286,
+    "priority": 65,
+    "type": "Type A (Web + Insta)",
+    "badge_class": "badge-hot",
+    "url": "audits/audit_Raajsik_-_Indian_Cuisine_Restaurant.html",
+    "wa_link": "https://wa.me/911147707070?text=Hey%21%20Love%20the%20reviews%20at%20Raajsik%20-%20Indian%20Cuisine%20Restaurant%E2%80%94a%204.6%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "01147707070"
+  },
+  {
+    "name": "Waffle & Scoop Cafe",
+    "city": "Delhi",
+    "category": "Ice cream shop",
+    "reviews": 649,
+    "priority": 65,
+    "type": "Type B (No Web + Insta)",
+    "badge_class": "badge-warm",
+    "url": "audits/audit_Waffle___Scoop_Cafe.html",
+    "wa_link": "https://wa.me/919220903229?text=Hey%21%20Love%20the%20reviews%20at%20Waffle%20%26%20Scoop%20Cafe%E2%80%94a%204.9%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "09220903229"
+  },
+  {
+    "name": "The Waffle Co.",
+    "city": "Delhi",
+    "category": "Dessert shop",
+    "reviews": 144,
+    "priority": 65,
+    "type": "Type A (Web + Insta)",
+    "badge_class": "badge-hot",
+    "url": "audits/audit_The_Waffle_Co_.html",
+    "wa_link": "https://wa.me/911141096262?text=Hey%21%20Love%20the%20reviews%20at%20The%20Waffle%20Co.%E2%80%94a%204.2%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "01141096262"
+  },
+  {
+    "name": "Adrift Kaya",
+    "city": "Delhi",
+    "category": "Japanese restaurant",
+    "reviews": 428,
+    "priority": 55,
+    "type": "Type A (Web + Insta)",
+    "badge_class": "badge-hot",
+    "url": "audits/audit_Adrift_Kaya.html",
+    "wa_link": "https://wa.me/918527488127?text=Hey%21%20Love%20the%20reviews%20at%20Adrift%20Kaya%E2%80%94a%204.7%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "08527488127"
+  },
+  {
+    "name": "The Belgian Waffle Co",
+    "city": "Delhi",
+    "category": "Dessert restaurant",
+    "reviews": 356,
+    "priority": 55,
+    "type": "Type A (Web + Insta)",
+    "badge_class": "badge-hot",
+    "url": "audits/audit_The_Belgian_Waffle_Co.html",
+    "wa_link": "https://wa.me/918657902079?text=Hey%21%20Love%20the%20reviews%20at%20The%20Belgian%20Waffle%20Co%E2%80%94a%204.6%20rating%20is%20awesome%21%20I%20was%20looking%20over%20Google%20Maps%20listings%20in%20Delhi%20and%20noticed%20one%20small%20adjustment%20that%20could%20bring%20you%20a%20lot%20more%20dine-in%20customers.%20I%20put%20together%20a%20quick%2C%20free%20visibility%20checklist%20for%20your%20profile.%20Let%20me%20know%20if%20I%20can%20send%20the%20report%20over%21",
+    "phone": "08657902079"
   }
 ];
 
