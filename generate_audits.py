@@ -502,8 +502,11 @@ def generate_report(lead):
     phone = lead.get("Phone", "")
     clean_phone = clean_phone_number(phone)
 
+    # Sanitize name for filename and URL
+    safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', lead.get("Business Name", "business"))
+
     # WhatsApp Pitch Encoding
-    pitch_text = f"Hi! I just did a local visibility and Google Maps review audit for {lead['Business Name']}. You have an amazing {lead['Rating']} rating but are currently behind your local competitors by over {lead['Review Gap']} reviews. We have built a free action plan for you to rank top-3 on Maps and get more dine-in bookings. Let me know if you would like me to share it!"
+    pitch_text = f"Hey! Love the reviews at {lead['Business Name']}—a {lead['Rating']} rating is awesome! I was looking over Google Maps listings in {lead['City']} and noticed one small adjustment that could bring you a lot more dine-in customers. I put together a quick, free visibility checklist for you here: https://ayanshverma05.github.io/gmaps_restaurant_leads/audits/audit_{safe_name}.html. Hope it helps!"
     from urllib.parse import quote
     pitch_url_encoded = quote(pitch_text)
 
@@ -538,7 +541,6 @@ def generate_report(lead):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     # Sanitize filename
-    safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', lead.get("Business Name", "business"))
     filename = os.path.join(OUTPUT_DIR, f"audit_{safe_name}.html")
 
     with open(filename, "w", encoding="utf-8") as f:
@@ -551,7 +553,7 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local Growth Audits Dashboard</title>
+    <title>Apex Local Visibility Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -860,8 +862,8 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
 <body>
     <div class="container">
         <header>
-            <h1>Local SEO Lead Audits</h1>
-            <p>Interactive dashboard containing visibility and conversion audit reports for restaurant leads in India.</p>
+            <h1>Apex Local Visibility Portal</h1>
+            <p>Growth audits and search engine optimization reports prepared for top restaurants.</p>
         </header>
 
         <!-- Stats -->
@@ -1024,7 +1026,7 @@ def generate_index_dashboard(leads):
         phone = lead.get("Phone", "")
         clean_phone = clean_phone_number(phone)
             
-        pitch_text = f"Hi! I just did a local visibility and Google Maps review audit for {lead['Business Name']}. You have an amazing {lead['Rating']} rating but are currently behind your local competitors by over {lead['Review Gap']} reviews. We have built a free action plan for you to rank top-3 on Maps and get more dine-in bookings. Let me know if you would like me to share it!"
+        pitch_text = f"Hey! Love the reviews at {lead['Business Name']}—a {lead['Rating']} rating is awesome! I was looking over Google Maps listings in {lead['City']} and noticed one small adjustment that could bring you a lot more dine-in customers. I put together a quick, free visibility checklist for you here: https://ayanshverma05.github.io/gmaps_restaurant_leads/audits/audit_{safe_name}.html. Hope it helps!"
         from urllib.parse import quote
         pitch_url_encoded = quote(pitch_text)
         wa_link = f"https://wa.me/{clean_phone}?text={pitch_url_encoded}"
