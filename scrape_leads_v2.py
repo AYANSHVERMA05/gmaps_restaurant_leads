@@ -63,7 +63,7 @@ def search_instagram_for_business(business_name, city):
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Configuration
-TARGET_LEADS_PER_CITY = 15
+TARGET_LEADS_PER_CITY = 120
 RAW_JSON_FILENAME = "restaurant_leads_raw.json"
 FINAL_CSV_FILENAME = "restaurant_leads_india_top100.csv"
 
@@ -238,8 +238,8 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
         visited_urls.add(url.split("?")[0].split("/data=")[0])
         return False
 
-    # Warm Lead Type A: Has custom website, has Instagram, <= 700 reviews
-    # Warm Lead Type B: No custom website, has Instagram, <= 700 reviews
+    # Warm Lead Type A: Has custom website, <= 700 reviews
+    # Warm Lead Type B: No custom website, <= 700 reviews
     instagram_url = ""
     
     # 1. Check if the Maps website is directly an Instagram link
@@ -253,15 +253,6 @@ def process_place_details(page, url, city, visited_urls, city_counts, raw_leads)
         weak_platforms = ["wixsite.com", "blogspot.com", "business.site", "facebook.com", "tumblr.com"]
         if not any(platform in domain for platform in weak_platforms):
             instagram_url = check_instagram_on_website(website)
-            
-    # 3. Fallback to DuckDuckGo search
-    if not instagram_url:
-        instagram_url = search_instagram_for_business(name, city)
-
-    if not instagram_url:
-        print(f"Skipping '{name}': No Instagram presence found (Reviews: {reviews_count}).")
-        visited_urls.add(url.split("?")[0].split("/data=")[0])
-        return False
 
     # 6. Parse Address
     address = ""
@@ -312,8 +303,7 @@ def scrape_leads():
         for lead in raw_leads:
             if lead.get("City") == city:
                 reviews = lead.get("Reviews", 0)
-                insta = lead.get("Instagram URL", "")
-                if reviews <= 700 and insta:
+                if reviews <= 700:
                     city_counts[city] += 1
     
     print("Current Scraped Lead Counts per City:")
@@ -352,7 +342,19 @@ def scrape_leads():
                 f"waffle shops in {city}",
                 f"boutique cafes in {city}",
                 f"bakeries in {city}",
-                f"cafes in {city}"
+                f"pizza in {city}",
+                f"burger in {city}",
+                f"biryani in {city}",
+                f"dhaba in {city}",
+                f"sweet shops in {city}",
+                f"fast food in {city}",
+                f"chinese restaurant in {city}",
+                f"family restaurant in {city}",
+                f"south indian food in {city}",
+                f"street food in {city}",
+                f"momos in {city}",
+                f"cafes in {city}",
+                f"fine dining in {city}"
             ]
 
             for query_term in queries_to_try:
@@ -433,8 +435,8 @@ def enrich_and_score_leads():
         city = lead["City"]
         instagram_url = lead.get("Instagram URL", "")
         
-        # Enforce user criteria: Reviews <= 700 and has Instagram verified
-        if reviews > 700 or not instagram_url:
+        # Enforce user criteria: Reviews <= 700
+        if reviews > 700:
             continue
 
         # 1. Website Quality Score (1-10)
@@ -491,8 +493,8 @@ def enrich_and_score_leads():
         
         accessibility_score = 9 if is_mobile else 4
 
-        # 5. Social Media Activity Heuristics (Always True as they have Instagram)
-        is_active_social = True
+        # 5. Social Media Activity Heuristics (Best effort if Instagram is present)
+        is_active_social = bool(instagram_url)
 
         # 6. Estimated Monthly Revenue Potential
         base_revenue = 400000
@@ -533,24 +535,24 @@ def enrich_and_score_leads():
 
         # 8. Classify Lead Type & Purchase Probability
         if is_custom_web:
-            lead_type = "Type A (Web + Insta)"
+            lead_type = "Type A (With Website)"
         else:
-            lead_type = "Type B (No Web + Insta)"
+            lead_type = "Type B (No Website)"
         purchase_prob = "High"
 
         # 9. Why they are a good prospect & Biggest problem
         if not is_custom_web:
-            biggest_problem = "Has active Instagram presence but lacks a custom website for Google Search and Maps conversion"
-            why_good = f"Strong visual presence on Instagram, but completely missing out on high-intent search traffic in {city} due to lack of a custom landing page. Standard competitors have 500+ reviews and websites."
+            biggest_problem = "Lacks a custom website for Google Search and Maps conversion"
+            why_good = f"Active local business in {city}, but completely missing out on high-intent search traffic due to lack of a custom landing page. Standard competitors have 1000+ reviews and websites."
         else:
-            biggest_problem = f"Stuck at only {reviews} reviews despite having a custom website and active Instagram"
-            why_good = f"Active local business in {city} with a custom website and Instagram presence, but currently lags behind competitor review volume (average 500+ reviews), keeping them lower on Google Maps packs."
+            biggest_problem = f"Stuck at only {reviews} reviews despite having a custom website"
+            why_good = f"Active local business in {city} with a custom website, but currently lags behind competitor review volume (average 1000+ reviews), keeping them lower on Google Maps packs."
 
         # 10. Personalized Pitch Angle
         if not is_custom_web:
             pitch_angle = f"Turn your {city} local searches and Google Maps presence into direct dine-in customers. We will build a custom mobile-friendly website and help automate review generation."
         else:
-            pitch_angle = f"You have a great website and Instagram, but only {reviews} reviews. Let's double your Google Business Profile reviews to match {city}'s top competitors."
+            pitch_angle = f"You have a website, but only {reviews} reviews. Let's help you double your reviews to match {city}'s top competitors."
 
         enriched_leads.append({
             "Business Name": name,

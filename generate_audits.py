@@ -479,7 +479,7 @@ def generate_report(lead):
     reviews_bar_pct = min(100, int((reviews / 1000) * 100))
 
     # Badge styling
-    lead_type = lead.get("Lead Type", "Type A (Web + Insta)")
+    lead_type = lead.get("Lead Type", "Type A (With Website)")
     if "Type A" in lead_type:
         badge_class = "badge-hot"
     else:
@@ -505,7 +505,7 @@ def generate_report(lead):
     if instagram_url:
         instagram_link = f'<a href="{instagram_url}" target="_blank" style="color: var(--accent-purple); text-decoration: none;">{instagram_url}</a>'
     else:
-        instagram_link = '<span style="color: var(--score-low);">Not Verified</span>'
+        instagram_link = '<span style="color: var(--text-muted);">Not Listed</span>'
 
     # Clean phone for CTA links
     phone = lead.get("Phone", "")
@@ -884,11 +884,11 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div class="stat-card hot">
                 <div class="stat-val">{type_a_leads}</div>
-                <div class="stat-label">Type A (Web + Insta)</div>
+                <div class="stat-label">Type A (With Website)</div>
             </div>
             <div class="stat-card warm">
                 <div class="stat-val">{type_b_leads}</div>
-                <div class="stat-label">Type B (No Web + Insta)</div>
+                <div class="stat-label">Type B (No Website)</div>
             </div>
         </section>
 
@@ -899,8 +899,8 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div class="filter-buttons">
                 <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="Type A (Web + Insta)">Type A (Web + Insta)</button>
-                <button class="filter-btn" data-filter="Type B (No Web + Insta)">Type B (No Web + Insta)</button>
+                <button class="filter-btn" data-filter="Type A (With Website)">Type A (With Website)</button>
+                <button class="filter-btn" data-filter="Type B (No Website)">Type B (No Website)</button>
             </div>
             <div class="sort-box">
                 <select id="sortSelect">
@@ -1020,7 +1020,7 @@ def generate_index_dashboard(leads):
         audit_url = f"audits/audit_{safe_name}.html"
         
         # Calculate badge class
-        lead_type = lead.get("Lead Type", "Type A (Web + Insta)")
+        lead_type = lead.get("Lead Type", "Type A (With Website)")
         if "Type A" in lead_type:
             badge_class = "badge-hot"
         else:
