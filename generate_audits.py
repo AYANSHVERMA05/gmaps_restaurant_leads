@@ -539,6 +539,522 @@ def generate_report(lead):
 
     return filename
 
+INDEX_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Growth Audits Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --bg-card: #161f30;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --score-high: #10b981;
+            --score-medium: #f59e0b;
+            --score-low: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 3rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card.total .stat-val { color: var(--accent-blue); }
+        .stat-card.hot .stat-val { color: #f87171; }
+        .stat-card.warm .stat-val { color: #fbbf24; }
+        .stat-card.medium .stat-val { color: #60a5fa; }
+
+        .stat-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Controls Section */
+        .controls-card {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--accent-purple);
+            color: white;
+            border-color: var(--accent-purple);
+        }
+
+        .sort-box select {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.6rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* Leads Grid */
+        .leads-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .lead-card {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .lead-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .lead-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .badge-hot { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-warm { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-medium { background-color: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+        .priority-score {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--score-high);
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .priority-score span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .lead-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .lead-meta {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding-bottom: 0.3rem;
+        }
+
+        .meta-item span:last-child {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .lead-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: auto;
+        }
+
+        .btn {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .btn-audit {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-audit:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 18px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-pitch {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-pitch:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 2rem 1rem; }
+            h1 { font-size: 2.2rem; }
+            .controls-card { flex-direction: column; align-items: stretch; }
+            .search-box { min-width: 100%; }
+            .filter-buttons { overflow-x: auto; padding-bottom: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Local SEO Lead Audits</h1>
+            <p>Interactive dashboard containing visibility and conversion audit reports for restaurant leads in India.</p>
+        </header>
+
+        <!-- Stats -->
+        <section class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-val">{total_leads}</div>
+                <div class="stat-label">Total Leads</div>
+            </div>
+            <div class="stat-card hot">
+                <div class="stat-val">{hot_leads}</div>
+                <div class="stat-label">🔥 Hot Leads</div>
+            </div>
+            <div class="stat-card warm">
+                <div class="stat-val">{warm_leads}</div>
+                <div class="stat-label">🟠 Warm Leads</div>
+            </div>
+            <div class="stat-card medium">
+                <div class="stat-val">{medium_leads}</div>
+                <div class="stat-label">🟡 Medium Leads</div>
+            </div>
+        </section>
+
+        <!-- Controls -->
+        <section class="controls-card">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search business name, category, or city...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="🔥 Hot Lead">🔥 Hot</button>
+                <button class="filter-btn" data-filter="🟠 Warm Lead">🟠 Warm</button>
+                <button class="filter-btn" data-filter="🟡 Medium Lead">🟡 Medium</button>
+            </div>
+            <div class="sort-box">
+                <select id="sortSelect">
+                    <option value="priority-desc">Priority: High to Low</option>
+                    <option value="reviews-desc">Reviews: High to Low</option>
+                    <option value="reviews-asc">Reviews: Low to High</option>
+                    <option value="name-asc">Name: A to Z</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Leads Grid -->
+        <main class="leads-grid" id="leadsGrid">
+            <!-- Dynamically populated via JS -->
+        </main>
+    </div>
+
+    <script>
+        const leadsData = {leads_json_str};
+
+        const searchInput = document.getElementById('searchInput');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const sortSelect = document.getElementById('sortSelect');
+        const leadsGrid = document.getElementById('leadsGrid');
+
+        let activeFilter = 'all';
+        let searchQuery = '';
+        let activeSort = 'priority-desc';
+
+        function renderLeads() {
+            // Filter
+            let filtered = leadsData.filter(lead => {
+                const matchesFilter = activeFilter === 'all' || lead.type === activeFilter;
+                const matchesSearch = lead.name.toLowerCase().includes(searchQuery) ||
+                                      lead.city.toLowerCase().includes(searchQuery) ||
+                                      lead.category.toLowerCase().includes(searchQuery);
+                return matchesFilter && matchesSearch;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                if (activeSort === 'priority-desc') return b.priority - a.priority;
+                if (activeSort === 'reviews-desc') return b.reviews - a.reviews;
+                if (activeSort === 'reviews-asc') return a.reviews - b.reviews;
+                if (activeSort === 'name-asc') return a.name.localeCompare(b.name);
+                return 0;
+            });
+
+            // Render
+            leadsGrid.innerHTML = filtered.map(lead => `
+                <div class="lead-card">
+                    <div>
+                        <div class="lead-header">
+                            <span class="badge ${lead.badge_class}">${lead.type}</span>
+                            <div class="priority-score">${lead.priority}<span>score</span></div>
+                        </div>
+                        <div class="lead-name">${lead.name}</div>
+                        <div class="lead-meta">
+                            <div class="meta-item">
+                                <span>City</span>
+                                <span>${lead.city}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>Category</span>
+                                <span>${lead.category}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>Google Reviews</span>
+                                <span>${lead.reviews}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>Phone</span>
+                                <span>${lead.phone || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lead-actions">
+                        <a href="${lead.url}" class="btn btn-audit" target="_blank">View Audit</a>
+                        <a href="${lead.wa_link}" class="btn btn-pitch" target="_blank">WhatsApp Pitch</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Event Listeners
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            renderLeads();
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeFilter = btn.getAttribute('data-filter');
+                renderLeads();
+            });
+        });
+
+        sortSelect.addEventListener('change', (e) => {
+            activeSort = e.target.value;
+            renderLeads();
+        });
+
+        // Initial render
+        renderLeads();
+    </script>
+</body>
+</html>
+"""
+
+def generate_index_dashboard(leads):
+    # Construct a list of records for the dashboard
+    records = []
+    for lead in leads:
+        safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', lead.get("Business Name", "business"))
+        audit_url = f"audits/audit_{safe_name}.html"
+        
+        # Calculate badge class
+        lead_type = lead.get("Lead Type", "🔥 Hot Lead")
+        if "Hot" in lead_type:
+            badge_class = "badge-hot"
+        elif "Warm" in lead_type:
+            badge_class = "badge-warm"
+        else:
+            badge_class = "badge-medium"
+            
+        phone = lead.get("Phone", "")
+        clean_phone = clean_phone_number(phone)
+        if len(clean_phone) == 10:
+            clean_phone = "91" + clean_phone
+            
+        pitch_text = f"Hi! I just did a local visibility and Google Maps review audit for {lead['Business Name']}. You have an amazing {lead['Rating']} rating but are currently behind your local competitors by over {lead['Review Gap']} reviews. We have built a free action plan for you to rank top-3 on Maps and get more dine-in bookings. Let me know if you would like me to share it!"
+        from urllib.parse import quote
+        pitch_url_encoded = quote(pitch_text)
+        wa_link = f"https://wa.me/{clean_phone}?text={pitch_url_encoded}"
+
+        records.append({
+            "name": lead.get("Business Name", "Unknown"),
+            "city": lead.get("City", ""),
+            "category": lead.get("Category", ""),
+            "reviews": lead.get("Google Reviews", 0),
+            "priority": lead.get("Priority Score", 50),
+            "type": lead_type,
+            "badge_class": badge_class,
+            "url": audit_url,
+            "wa_link": wa_link,
+            "phone": phone
+        })
+        
+    # Stats counts
+    total_leads = len(records)
+    hot_leads = sum(1 for r in records if "Hot" in r["type"])
+    warm_leads = sum(1 for r in records if "Warm" in r["type"])
+    medium_leads = sum(1 for r in records if "Medium" in r["type"])
+
+    html = INDEX_TEMPLATE
+    html = html.replace("{total_leads}", str(total_leads))
+    html = html.replace("{hot_leads}", str(hot_leads))
+    html = html.replace("{warm_leads}", str(warm_leads))
+    html = html.replace("{medium_leads}", str(medium_leads))
+    html = html.replace("{leads_json_str}", json.dumps(records, indent=2))
+
+    filename = "index.html"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(html)
+    return filename
+
 def main():
     if not os.path.exists(JSON_FILENAME):
         print(f"Error: Scored leads database '{JSON_FILENAME}' not found!")
@@ -566,11 +1082,16 @@ def main():
                 count += 1
             except Exception as e:
                 print(f"Error generating audit for '{lead.get('Business Name', 'Unknown')}': {e}")
+        index_file = generate_index_dashboard(leads)
         print(f"\n[SUCCESS] Generated {count} audit reports inside the '{OUTPUT_DIR}' directory!")
+        print(f"[SUCCESS] Generated dashboard index file: {os.path.abspath(index_file)}")
         sys.exit(0)
 
     print(f"=== Welcome to the Lead Visibility Audit Generator ===")
     print(f"Successfully loaded {len(leads)} leads from '{JSON_FILENAME}'.")
+    
+    # Pre-generate dashboard on launch
+    generate_index_dashboard(leads)
 
     # Let user search or choose
     while True:
@@ -595,6 +1116,7 @@ def main():
                 idx = int(sel) - 1
                 if 0 <= idx < len(top_20):
                     filename = generate_report(top_20[idx])
+                    generate_index_dashboard(leads)
                     print(f"\n[SUCCESS] Audit generated: {os.path.abspath(filename)}")
                 else:
                     print("Invalid selection!")
@@ -624,6 +1146,7 @@ def main():
                 idx = int(sel) - 1
                 if 0 <= idx < len(matches):
                     filename = generate_report(matches[idx])
+                    generate_index_dashboard(leads)
                     print(f"\n[SUCCESS] Audit generated: {os.path.abspath(filename)}")
                 else:
                     print("Invalid selection!")
@@ -639,7 +1162,9 @@ def main():
                     count += 1
                 except Exception as e:
                     print(f"Error generating audit for '{lead.get('Business Name', 'Unknown')}': {e}")
+            index_file = generate_index_dashboard(leads)
             print(f"\n[SUCCESS] Generated {count} audit reports inside the '{OUTPUT_DIR}' directory!")
+            print(f"[SUCCESS] Generated dashboard index file: {os.path.abspath(index_file)}")
 
         elif choice == "4":
             print("\nExiting. Good luck with your pitches!")
